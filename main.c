@@ -1,3 +1,4 @@
+/* BASICTEXT */
 #include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +15,7 @@
 typedef unsigned char byte;
 typedef unsigned short word;
 
+FILE* file;
 byte* text;
 byte positionInLine;
 word currentLine;
@@ -60,12 +62,59 @@ byte clearBuffer() {
     return 0;
 }
 
-int main() {
-    FILE* file;
+byte startNewLine() {
+    printf("\n");
+    writeCharacter('\n');
+    positionInLine = 0;
+    currentLine++;
+    printf("%d:", currentLine+1);
+    printCurrentLine();
+}
+
+byte openFile() {
+    clearBuffer();
+    file = fopen(buffer, "rb");
+    if (file == NULL) {
+        return 1;
+    }
+    positionInLine = 0;
+    currentLine = 0;
+    for (i = 0; i < maxLineLength*maxNumberOfLines; i++) {
+        int nextChar = getc(file);
+        if ((nextChar == EOF) || (nextChar == 0)) {
+            break;
+        }
+        
+        writeCharacter(nextChar);
+        positionInLine++;
+
+        if (nextChar == '\n') {
+            printCurrentLineWithLineNumber();
+            printf("\n");
+            currentLine++;
+            continue;
+        }
+    }
+    fclose(file);
+    printCurrentLineWithLineNumber();
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
 	text = (byte*)calloc(maxLineLength * maxNumberOfLines, sizeof(byte));
 	buffer = (char*)calloc(maxFilenameLength, sizeof(char));
 
-    printf("%d:", currentLine+1);
+	if (argc > 1) {
+		/* Get the file */
+        buffer = argv[1];
+        if (openFile()) {
+            printf("\nFILE ERROR\n");
+            return 1;
+        }
+    } else {
+        printCurrentLineWithLineNumber();
+    }
+
     while(mode & (1 << execute)) {
         character = getch();
         if (mode & (1 << saveEditSwitch)) {
@@ -74,8 +123,14 @@ int main() {
                 case 'n':
                     printf("NEW? (Y/N) ");
                     scanf_s("%s", buffer);
-                    if ("Y") {
+                    if (buffer[0] == 'Y') {
                         clearBuffer();
+                        positionInLine = 0;
+                        currentLine = 0;
+                        mode = mode ^ (1 << saveEditSwitch);
+                        printCurrentLineWithLineNumber();
+                    } else {
+                        printf("\nCMD? ");
                     }
                     break;
                 /* Goto line */
@@ -85,6 +140,14 @@ int main() {
                     currentLine = atoi(buffer)-1;
                     mode = mode ^ (1 << saveEditSwitch);
                     printCurrentLineWithLineNumber();
+                    break;
+                /* Print line */
+                case 'l':
+                    printf("LINE? ");
+                    scanf_s("%s", buffer);
+                    currentLine = atoi(buffer)-1;
+                    printCurrentLineWithLineNumber();
+                    printf("\nCMD? ");
                     break;
                 /* Edit */
                 case 'e':
@@ -104,33 +167,13 @@ int main() {
                         fputc(text[i],file);
                     }
                     fclose(file);
+                    printf("\nCMD? ");
                     break;
                 /* Open */
                 case 'o':
                     printf("OPEN? ");
                     readFilename();
-                    clearBuffer();
-                    file = fopen(buffer, "rb");
-                    positionInLine = 0;
-                    currentLine = 0;
-                    printf("%d:", currentLine+1);
-                    for (i = 0; i < maxLineLength*maxNumberOfLines; i++) {
-                        int nextChar = getc(file);
-                        if ((nextChar == EOF) || (nextChar == 0)) {
-                            break;
-                        }
-                        
-                        writeCharacter(nextChar);
-                        positionInLine++;
-
-                        if (nextChar == '\n') {
-                            currentLine++;
-                            printf("\n%d:", currentLine+1);
-                            continue;
-                        }
-                        putchar(nextChar);
-                    }
-                    fclose(file);
+                    openFile();
                     mode = mode ^ (1 << saveEditSwitch);
                     break;
                 /* Exit */
@@ -143,12 +186,12 @@ int main() {
         } else {
             /* Edit Mode */
             if (positionInLine >= maxLineLength) {
-                positionInLine = maxLineLength;
-                printf("\a");
+                startNewLine();
+                continue;
             }
             if (currentLine >= maxNumberOfLines) {
-                currentLine = maxNumberOfLines;
                 printf("\a");
+                continue;
             }
             switch (character) {
                 case ESC:
@@ -157,17 +200,19 @@ int main() {
                     break;
                 case '\r':
                 case '\n':
-                    printf("\n");
-                    writeCharacter('\n');
-                    positionInLine = 0;
-                    currentLine++;
-                    printf("%d:", currentLine+1);
-                    printCurrentLine();
+                    startNewLine();
                     break;
                 case '\b':
-                    putchar(character);
-                    positionInLine--;
-                    writeCharacter(0);
+                    if (positionInLine > 0) {
+                        putchar(character);
+                        /* Hack to overwrite the previous character */
+                        putchar(' ');
+                        putchar(character);
+                        positionInLine--;
+                        writeCharacter(0);
+                    } else {
+                        printf("\a");
+                    }
                     break;
                 default:
                     putchar(character);

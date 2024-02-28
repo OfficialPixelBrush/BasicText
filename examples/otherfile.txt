@@ -1,0 +1,2 @@
+This is a different file.
+There is nothing left of the previous file.
