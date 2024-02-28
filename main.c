@@ -1,8 +1,11 @@
 /* BASICTEXT */
-#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>   
+#if defined (__WIN32__)
+    #include <conio.h>
+#else
+    #include <ncurses.h>
+#endif
 
 #define maxLineLength 128
 #define maxNumberOfLines 256
@@ -116,7 +119,12 @@ int main(int argc, char *argv[]) {
     }
 
     while(mode & (1 << execute)) {
-        character = getch();
+        #if defined (__WIN32__)
+            character = getch();
+        #else
+            character = getch(stdin);
+        #endif
+
         if (mode & (1 << saveEditSwitch)) {
             /* Save Mode */
             switch (character) {
