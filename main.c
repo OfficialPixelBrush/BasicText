@@ -48,6 +48,18 @@ byte printCurrentLine() {
     }
 }
 
+byte printCurrentLineWithLineNumber() {
+    printf("%d:", currentLine+1);
+    printCurrentLine();
+}
+
+byte clearBuffer() {
+    for (i = 0; i < maxLineLength * maxNumberOfLines; i++) {
+        text[i] = 0;
+    }
+    return 0;
+}
+
 int main() {
     FILE* file;
 	text = (byte*)calloc(maxLineLength * maxNumberOfLines, sizeof(byte));
@@ -59,23 +71,30 @@ int main() {
         if (mode & (1 << saveEditSwitch)) {
             /* Save Mode */
             switch (character) {
+                case 'n':
+                    printf("NEW? (Y/N) ");
+                    scanf_s("%s", buffer);
+                    if ("Y") {
+                        clearBuffer();
+                    }
+                    break;
                 /* Goto line */
                 case 'g':
                     printf("GOTO? ");
                     scanf_s("%s", buffer);
                     currentLine = atoi(buffer)-1;
                     mode = mode ^ (1 << saveEditSwitch);
-                    printf("%d:", currentLine+1);
-                    printCurrentLine();
+                    printCurrentLineWithLineNumber();
                     break;
                 /* Edit */
                 case 'e':
                     mode = mode ^ (1 << saveEditSwitch);
                     printf("EDIT\n");
+                    printCurrentLineWithLineNumber();
                     break;
                 /* Save */
                 case 's':
-                    printf("SAVE: ");
+                    printf("SAVE? ");
                     readFilename();
                     file = fopen(buffer, "wb");
                     for (i = 0; i < maxLineLength*maxNumberOfLines; i++) {
@@ -88,8 +107,9 @@ int main() {
                     break;
                 /* Open */
                 case 'o':
-                    printf("OPEN: ");
+                    printf("OPEN? ");
                     readFilename();
+                    clearBuffer();
                     file = fopen(buffer, "rb");
                     positionInLine = 0;
                     currentLine = 0;
@@ -115,7 +135,7 @@ int main() {
                     break;
                 /* Exit */
                 case 'x':
-                    printf("\nBYE!\n");
+                    printf("BYE!\n");
                     return 0;
                 default:
                     break;
