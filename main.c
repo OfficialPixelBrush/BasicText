@@ -1,3 +1,4 @@
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <conio.h>   
@@ -7,80 +8,155 @@
 #define maxFilenameLength 256
 #define ESC 27
 
-#define execute 1 << 0
-#define saveEditSwitch 1 << 1
+#define execute 0
+#define saveEditSwitch 1
 
 typedef unsigned char byte;
 typedef unsigned short word;
 
 byte* text;
-word position;
+byte positionInLine;
+word currentLine;
 byte character = 0;
 word i = 0;
-byte mode = 0 | execute;
-byte* filename;
+byte mode = 0 | (1 << execute);
+char* buffer;
 
 int readFilename() {
-    i = 0;
-    while (character != '\n') {
-        filename[i] = character;
-        putchar(character);
-        i++;
-    }
+    scanf_s("%s", buffer);
+    /*fgets(filename, maxFilenameLength-1, stdin);*/
+    printf("FILENAME: %s\n", buffer);
     return 0;
+}
+
+byte writeCharacter(byte character) {
+    text[positionInLine + currentLine*maxLineLength] = character;
+    return 0;
+}
+
+byte readCharacter() {
+    return text[positionInLine + currentLine*maxLineLength];
+}
+
+byte printCurrentLine() {
+    for (positionInLine = 0; positionInLine < maxLineLength; positionInLine++) {
+        byte character = readCharacter();
+        if ((character == 0) || (character == '\n')) {
+            break;
+        }
+        putchar(character);
+    }
 }
 
 int main() {
     FILE* file;
-	text = (byte*)malloc(maxLineLength * maxNumberOfLines * sizeof(byte));
-	filename = (byte*)malloc(maxFilenameLength * sizeof(byte));
+	text = (byte*)calloc(maxLineLength * maxNumberOfLines, sizeof(byte));
+	buffer = (char*)calloc(maxFilenameLength, sizeof(char));
 
-    while(mode & execute) {
+    printf("%d:", currentLine+1);
+    while(mode & (1 << execute)) {
         character = getch();
-        if (mode & saveEditSwitch) {
+        if (mode & (1 << saveEditSwitch)) {
             /* Save Mode */
             switch (character) {
+                /* Goto line */
+                case 'g':
+                    printf("GOTO? ");
+                    scanf_s("%s", buffer);
+                    currentLine = atoi(buffer)-1;
+                    mode = mode ^ (1 << saveEditSwitch);
+                    printf("%d:", currentLine+1);
+                    printCurrentLine();
+                    break;
                 /* Edit */
                 case 'e':
-                    mode = mode & ~saveEditSwitch;
+                    mode = mode ^ (1 << saveEditSwitch);
                     printf("EDIT\n");
                     break;
                 /* Save */
                 case 's':
+                    printf("SAVE: ");
                     readFilename();
-                    file = fopen(filename, "wb");
+                    file = fopen(buffer, "wb");
                     for (i = 0; i < maxLineLength*maxNumberOfLines; i++) {
+                        if (text[i] == 0) {
+                            continue;
+                        }
                         fputc(text[i],file);
                     }
                     fclose(file);
                     break;
                 /* Open */
                 case 'o':
+                    printf("OPEN: ");
                     readFilename();
-                    file = fopen(filename, "rb");
+                    file = fopen(buffer, "rb");
+                    positionInLine = 0;
+                    currentLine = 0;
+                    printf("%d:", currentLine+1);
                     for (i = 0; i < maxLineLength*maxNumberOfLines; i++) {
-                        byte nextChar = getc(file);
-                        if (nextChar == EOF) {
+                        int nextChar = getc(file);
+                        if ((nextChar == EOF) || (nextChar == 0)) {
                             break;
                         }
-                        text[i] = nextChar;
+                        
+                        writeCharacter(nextChar);
+                        positionInLine++;
+
+                        if (nextChar == '\n') {
+                            currentLine++;
+                            printf("\n%d:", currentLine+1);
+                            continue;
+                        }
+                        putchar(nextChar);
                     }
                     fclose(file);
+                    mode = mode ^ (1 << saveEditSwitch);
                     break;
                 /* Exit */
                 case 'x':
-                    printf("BYE!\n");
+                    printf("\nBYE!\n");
                     return 0;
+                default:
+                    break;
             }
-            printf("\n");
         } else {
             /* Edit Mode */
-            if (character == ESC) {
-                mode = mode | saveEditSwitch;
-                printf("CMD? ");
+            if (positionInLine >= maxLineLength) {
+                positionInLine = maxLineLength;
+                printf("\a");
             }
-            putchar(character);
+            if (currentLine >= maxNumberOfLines) {
+                currentLine = maxNumberOfLines;
+                printf("\a");
+            }
+            switch (character) {
+                case ESC:
+                    mode = mode ^ (1 << saveEditSwitch);
+                    printf("\nCMD? ");
+                    break;
+                case '\r':
+                case '\n':
+                    printf("\n");
+                    writeCharacter('\n');
+                    positionInLine = 0;
+                    currentLine++;
+                    printf("%d:", currentLine+1);
+                    printCurrentLine();
+                    break;
+                case '\b':
+                    putchar(character);
+                    positionInLine--;
+                    writeCharacter(0);
+                    break;
+                default:
+                    putchar(character);
+                    writeCharacter(character);
+                    positionInLine++;
+                    break;
+            }
         }
     }
+    printf("\nERROR\n");
     return 1;
 }

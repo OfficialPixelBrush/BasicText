@@ -1,0 +1,1 @@
+this is an example.i can use the backspace key to return to previous characters.this is extremely basic, and not very practical, but it's stillquite impressive and neat. I still have to limit this systemto potentially ring the bell when the 128 line lengthlimit has been reached.this was fun to make. Thank you for your support!
