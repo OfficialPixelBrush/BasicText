@@ -24,6 +24,7 @@ byte positionInLine;
 word currentLine;
 byte character = 0;
 word i = 0;
+word j = 0;
 byte mode = 0 | (1 << execute);
 char* buffer;
 
@@ -74,6 +75,36 @@ byte startNewLine() {
     printCurrentLine();
 }
 
+byte moveEverythingDown() {
+    /* j holds line number to be inserted */
+    /* Find EOF */
+    positionInLine = 0;
+    for (currentLine = 0; currentLine < maxNumberOfLines; currentLine++) {
+        if (readCharacter() == 0) {
+            /* If we find a null, this is the last line */
+            break;
+        }
+    }
+
+    /* Move all blocks down relative to EOF*/
+    for (currentLine = currentLine; currentLine > j; currentLine--) {
+        for (i = 0; i < maxLineLength; i++) {
+            text[i + currentLine*maxLineLength] = text[i + (currentLine-1)*maxLineLength];
+        }
+    }
+    return 0;
+}
+
+byte clearCurrentLine() {
+    for (positionInLine = 0; positionInLine < maxLineLength; positionInLine++) {
+        if (readCharacter() == 0) {
+            break;
+        }
+        writeCharacter(0);
+    }
+    positionInLine = 0;
+}
+
 byte openFile() {
     clearBuffer();
     file = fopen(buffer, "rb");
@@ -86,14 +117,14 @@ byte openFile() {
         int nextChar = getc(file);
         if ((nextChar == EOF) || (nextChar == 0)) {
             break;
-        }
-        
+        }        
         writeCharacter(nextChar);
         positionInLine++;
 
-        if (nextChar == '\n') {
+        if ((nextChar == '\n') || (nextChar == 0x0A)) {
             printCurrentLineWithLineNumber();
             printf("\n");
+            positionInLine = 0;
             currentLine++;
             continue;
         }
@@ -146,12 +177,45 @@ int main(int argc, char *argv[]) {
                     printf("GOTO? ");
                     scanf_s("%s", buffer);
                     currentLine = atoi(buffer)-1;
+                    printCurrentLineWithLineNumber();
                     mode = mode ^ (1 << saveEditSwitch);
+                    break;
+                /* Insert line */
+                case 'i':
+                    printf("INSERT? ");
+                    scanf_s("%s", buffer);
+                    j = atoi(buffer)-1;
+                    moveEverythingDown();
+                    mode = mode ^ (1 << saveEditSwitch);
+                    clearCurrentLine();
                     printCurrentLineWithLineNumber();
                     break;
-                /* Print line */
+                /* List */
                 case 'l':
-                    printf("LINE? ");
+                    printf("LIST:\n");
+                    positionInLine = 0;
+                    currentLine = 0;
+                    for (i = 0; i < maxLineLength*maxNumberOfLines; i++) {
+                        byte nextChar = readCharacter();
+                        if (nextChar == 0) {
+                            break;
+                        }        
+                        positionInLine++;
+
+                        if (nextChar == '\n') {
+                            printCurrentLineWithLineNumber();
+                            printf("\n");
+                            currentLine++;
+                            positionInLine = 0;
+                            continue;
+                        }
+                    }
+                    printCurrentLineWithLineNumber();
+                    mode = mode ^ (1 << saveEditSwitch);
+                    break;
+                /* Print line */
+                case 'r':
+                    printf("READLINE? ");
                     scanf_s("%s", buffer);
                     currentLine = atoi(buffer)-1;
                     printCurrentLineWithLineNumber();
