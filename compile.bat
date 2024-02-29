@@ -1,1 +1,1 @@
-gcc -std=c89 ./main.c -Wextra -ansi -obt
+gcc -std=c89 -O2 ./main.c -Wextra -ansi -obt
