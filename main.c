@@ -27,8 +27,11 @@ byte mode = 0 | (1 << execute);
 char* buffer;
 
 int readFilename() {
-    scanf_s("%s", buffer);
-    /*fgets(filename, maxFilenameLength-1, stdin);*/
+    #if defined (__WIN32__)
+        scanf_s("%s", buffer);
+    #else
+        fgets(buffer, maxFilenameLength-1, stdin);
+    #endif
     printf("FILENAME: %s\n", buffer);
     return 0;
 }
