@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #if defined (__WIN32__)
     #include <conio.h>
-#else
-    #include <ncurses.h>
 #endif
 
 #define maxLineLength 128
@@ -179,7 +177,7 @@ int main(int argc, char *argv[]) {
         #if defined (__WIN32__)
             character = getch();
         #else
-            character = getch(stdin);
+            character = fgetc(stdin);
         #endif
 
         if (mode & (1 << saveEditSwitch)) {
