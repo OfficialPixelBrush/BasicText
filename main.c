@@ -26,12 +26,17 @@ word j = 0;
 byte mode = 0 | (1 << execute);
 char* buffer;
 
-int readFilename() {
+int globalStringReadToBuffer() {
     #if defined (__WIN32__)
         scanf_s("%s", buffer);
     #else
         fgets(buffer, maxFilenameLength-1, stdin);
     #endif
+    return 0;
+}
+
+int readFilename() {
+    globalStringReadToBuffer();
     printf("FILENAME: %s\n", buffer);
     return 0;
 }
@@ -188,7 +193,7 @@ int main(int argc, char *argv[]) {
             switch (character) {
                 case 'n':
                     printf("NEW? (Y/N) ");
-                    scanf_s("%s", buffer);
+                    globalStringReadToBuffer();
                     if (buffer[0] == 'Y') {
                         clearBuffer();
                         positionInLine = 0;
@@ -202,7 +207,7 @@ int main(int argc, char *argv[]) {
                 /* Goto line */
                 case 'g':
                     printf("GOTO? ");
-                    scanf_s("%s", buffer);
+                    globalStringReadToBuffer();
                     currentLine = atoi(buffer)-1;
                     mode = mode ^ (1 << saveEditSwitch);
                     printCurrentLineWithLineNumber();
@@ -210,7 +215,7 @@ int main(int argc, char *argv[]) {
                 /* Insert line */
                 case 'i':
                     printf("INSERT? ");
-                    scanf_s("%s", buffer);
+                    globalStringReadToBuffer();
                     j = atoi(buffer)-1;
                     moveEverythingDown();
                     mode = mode ^ (1 << saveEditSwitch);
@@ -220,7 +225,7 @@ int main(int argc, char *argv[]) {
                 /* Insert line */
                 case 'd':
                     printf("DELETE? ");
-                    scanf_s("%s", buffer);
+                    globalStringReadToBuffer();
                     j = atoi(buffer)-1;
                     moveEverythingUp();
                     mode = mode ^ (1 << saveEditSwitch);
@@ -252,7 +257,7 @@ int main(int argc, char *argv[]) {
                 /* Print line */
                 case 'r':
                     printf("READLINE? ");
-                    scanf_s("%s", buffer);
+                    globalStringReadToBuffer();
                     currentLine = atoi(buffer)-1;
                     printCurrentLineWithLineNumber();
                     printf("\nCMD? ");
@@ -288,6 +293,19 @@ int main(int argc, char *argv[]) {
                 case 'x':
                     printf("BYE!\n");
                     return 0;
+                case 'h':
+                    printf("\n");
+                    printf("n: NEW\n");
+                    printf("g: GOTO\n");
+                    printf("i: INSERT\n");
+                    printf("d: DELETE\n");
+                    printf("l: LIST\n");
+                    printf("r: READLINE\n");
+                    printf("e: EDIT\n");
+                    printf("s: SAVE\n");
+                    printf("o: OPEN\n");
+                    printf("h: HELP\n");
+                    printf("\nCMD? ");
                 default:
                     break;
             }
